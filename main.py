@@ -50,4 +50,4 @@ async def av(ctx, member: discord.Member = None):
         await ctx.send('O usuário não possui um avatar definido.')
 
 # Rodar o bot
-bot.run('MTA4NTkwMDYyODI0MjQ3NzA1Ng.Gjpk8b.tuyObT7jXcvp2yDSHNoP5PzdJ2GIm4jmwavfFs')
+bot.run('')
