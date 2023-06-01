@@ -1,7 +1,5 @@
 import discord
 from discord.ext import commands
-import os
-
 
 # Configuração do bot
 intents = discord.Intents.all()
@@ -16,7 +14,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # Evento de inicialização
 @bot.event
 async def on_ready():
-    os.system('cls')  # Executa o comando clr no console
     print(f'{bot.user.name} está online!')
 
 
