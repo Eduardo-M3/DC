@@ -57,7 +57,8 @@ async def av(ctx, member: discord.Member = None):
 async def vip(ctx):
     options = {
         '🟢': 'create_role',
-        '🟠': 'change_role_name'
+        '🟠': 'change_role_name',
+        '🔵': 'change_role_color'
     }
 
     embed = discord.Embed(
@@ -105,6 +106,8 @@ async def handle_option(ctx, option):
         await create_role(ctx)
     elif option == 'change_role_name':
         await change_role_name(ctx)
+    elif option == 'change_role_color':
+        await change_role_color(ctx)
 
 
 async def create_role(ctx):
@@ -126,8 +129,12 @@ async def change_role_name(ctx):
     vip_role = get_vip_role(ctx.author)
     if vip_role is not None:
         await ctx.send('Digite o novo nome para o cargo:')
+
+        def check(message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
         try:
-            message = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=60.0)
+            message = await bot.wait_for('message', check=check, timeout=60.0)
             new_name = message.content
 
             # Verifica se o novo nome já está sendo usado por outro cargo VIP
@@ -138,24 +145,34 @@ async def change_role_name(ctx):
 
             await vip_role.edit(name=new_name)
             await ctx.send('Nome do cargo alterado com sucesso!')
+        except TimeoutError:
+            await ctx.send('Tempo esgotado. Por favor, tente novamente.')
+    else:
+        await ctx.send('Você ainda não criou um cargo.')
 
-            await ctx.send('Digite o código RGB para a nova cor do cargo (formato: R, G, B):')
-            try:
-                message = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=60.0)
-                rgb = message.content.split(',')
-                rgb = [int(c.strip()) for c in rgb]
 
-                # Verifica se o código RGB é válido
-                if len(rgb) != 3 or any(c < 0 or c > 255 for c in rgb):
-                    await ctx.send('O código RGB fornecido é inválido.')
-                    return
+async def change_role_color(ctx):
+    vip_role = get_vip_role(ctx.author)
+    if vip_role is not None:
+        await ctx.send('Digite o código RGB para a nova cor do cargo (formato: R, G, B):')
 
-                # Altera a cor do cargo
-                color = discord.Color.from_rgb(*rgb)
-                await vip_role.edit(color=color)
-                await ctx.send('Cor do cargo alterada com sucesso!')
-            except TimeoutError:
-                await ctx.send('Tempo esgotado. Por favor, tente novamente.')
+        def check(message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            message = await bot.wait_for('message', check=check, timeout=60.0)
+            rgb = message.content.split(',')
+            rgb = [int(c.strip()) for c in rgb]
+
+            # Verifica se o código RGB é válido
+            if len(rgb) != 3 or any(c < 0 or c > 255 for c in rgb):
+                await ctx.send('O código RGB fornecido é inválido.')
+                return
+
+            # Altera a cor do cargo
+            color = discord.Color.from_rgb(*rgb)
+            await vip_role.edit(color=color)
+            await ctx.send('Cor do cargo alterada com sucesso!')
         except TimeoutError:
             await ctx.send('Tempo esgotado. Por favor, tente novamente.')
     else:
@@ -170,3 +187,4 @@ def get_vip_role(member):
 
 
 # Rodar o bot
+bot.run('MTA4NTkwMDYyODI0MjQ3NzA1Ng.GLHfhF.7xlHOPZkMlKCWWOReRVDgbVwiZu1ElOqhTNXCE')
