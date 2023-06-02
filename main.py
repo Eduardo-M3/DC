@@ -98,7 +98,25 @@ async def av(ctx, member: discord.Member = None):
         embed.set_image(url=member.avatar.url)
         await ctx.send(embed=embed)
     else:
-        await ctx.send('O usuário não possui um avatar definido.')
+        await ctx.send('Usuário sem av.')
+
+
+@bot.command()
+async def bn(ctx, user: discord.User = None):
+    if user is None:
+        user = ctx.author
+    user = await bot.fetch_user(user.id)
+    if user.banner:
+        embed = discord.Embed(
+            title="Banner",
+            description=f"Banner de {user.mention}",
+            color=discord.Color.blue()
+        )
+        embed.set_image(url=user.banner.url)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send('Usuário sem banner.')
+
 
 
 @bot.command()
@@ -182,5 +200,3 @@ async def levantamento(ctx):
 Com tag: {members_with_tag_count:<5}
     """
     await ctx.send(f"{table}")
-
-bot.run('MTA4NTkwMDYyODI0MjQ3NzA1Ng.G5z59Y.ZORu6IM125lO_XmYqqxXlPj6N974EVG9TCyOEs')
