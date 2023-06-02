@@ -52,6 +52,11 @@ async def on_message(message):
             inline=True
         )
         embed.add_field(
+            name="bn @user",
+            value="Comando usado para exibir o banner do usuário.",
+            inline=True
+        )
+        embed.add_field(
             name="listar @cargo",
             value="Lista o ID de todos os usuários que possuem um determinado cargo.",
             inline=True
@@ -116,7 +121,6 @@ async def bn(ctx, user: discord.User = None):
         await ctx.send(embed=embed)
     else:
         await ctx.send('Usuário sem banner.')
-
 
 
 @bot.command()
