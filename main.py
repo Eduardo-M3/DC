@@ -5,7 +5,7 @@ from datetime import datetime
 
 intents = discord.Intents.all()
 
-bot = commands.Bot(command_prefix='-', intents=intents)
+bot = commands.Bot(command_prefix='.', intents=intents)
 
 
 @bot.event
@@ -15,11 +15,13 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    if message.author == bot.user:  # Verifica se o autor da mensagem é o próprio bot
+        return  # Ignora mensagens do próprio bot
     if bot.user.mentioned_in(message):
         embed = discord.Embed(
             title="Help",
-            description="Olá! Eu sou um bot de exemplo.",
-            color=discord.Color.random()
+            description="",
+            color=discord.Color.blurple()
         )
 
         if message.author.avatar:
@@ -45,8 +47,28 @@ async def on_message(message):
             inline=False
         )
         embed.add_field(
-            name="Campo 2",
-            value="Valor 2",
+            name="av @user",
+            value="Comando usado para exibir o av do usuário.",
+            inline=True
+        )
+        embed.add_field(
+            name="listar @cargo",
+            value="Lista o ID de todos os usuários que possuem um determinado cargo.",
+            inline=True
+        )
+        embed.add_field(
+            name="mencionar @cargo",
+            value="Menciona todos os usuários que possuem um determinado cargo.",
+            inline=True
+        )
+        embed.add_field(
+            name="verificar @cargo [ID's]",
+            value="Retorna todos os usuários que possuem o cargo e não estão na lista informada, além de também exibir uma lista dos usuários que não possuem o cargo e foram informados.",
+            inline=True
+        )
+        embed.add_field(
+            name="levantamento",
+            value="Faz o levantamento, exibindo os membros que não possuem a tag Equipe Mov Chat e os que possuem.",
             inline=True
         )
         embed.timestamp = datetime.utcnow()
@@ -96,7 +118,7 @@ async def mencionar(ctx, cargo: discord.Role):
 
 
 @bot.command()
-async def verificar_membros(ctx, cargo: discord.Role, *, membros_lista: str):
+async def verificar(ctx, cargo: discord.Role, *, membros_lista: str):
     # Obtém a lista de membros mencionada pelo usuário
     membros_mencionados = membros_lista.split()
 
@@ -108,10 +130,57 @@ async def verificar_membros(ctx, cargo: discord.Role, *, membros_lista: str):
         membro for membro in membros_com_cargo if str(membro.id) not in membros_mencionados
     ]
 
-    # Menciona os membros que possuem o cargo, mas não estão na lista mencionada
+    # Filtra os membros mencionados que não possuem o cargo
+    membros_sem_cargo = [
+        membro_id for membro_id in membros_mencionados if discord.utils.get(ctx.guild.members, id=int(membro_id)) not in membros_com_cargo
+    ]
+
+    # Menciona os membros que possuem o cargo, mas não foram mencionados
     if membros_nao_mencionados:
-        mencoes = ' '.join(
+        mencoes = ' \n '.join(
             [membro.mention for membro in membros_nao_mencionados])
-        await ctx.send(f'Membros com o cargo {cargo.name}, mas não mencionados: {mencoes}')
+        await ctx.send(f'> Membros com o cargo {cargo.name}, mas não mencionados: \n\n\{mencoes}')
     else:
         await ctx.send('Todos os membros com o cargo estão mencionados.')
+
+    # Exibe os membros mencionados que não possuem o cargo
+    if membros_sem_cargo:
+        membros_sem_cargo_nomes = ' \n '.join(
+            [f"<@{membro_id}>" for membro_id in membros_sem_cargo])
+        await ctx.send(f'> Membros mencionados sem o cargo {cargo.name}:\n\n {membros_sem_cargo_nomes}')
+    else:
+        await ctx.send('Todos os membros mencionados possuem o cargo.')
+
+
+# Informe a tag desejada aqui
+ID_TAG = "1093694361801338921"
+ID_TAG2 = "1093694341505105984"
+
+@bot.command()
+async def levantamento(ctx):
+    # Obtém o número total de membros no servidor
+    total_members = len(ctx.guild.members)
+
+    # Filtra os membros que possuem a tag desejada
+    members_with_tag = [
+        member for member in ctx.guild.members if ID_TAG in [str(role.id) for role in member.roles]
+    ]
+    # Filtra os membros que possuem a tag desejada
+    members_with_tag2 = [
+        member for member in ctx.guild.members if ID_TAG2 in [str(role.id) for role in member.roles]
+    ]
+    # Obtém o número de membros com a tag
+    members_with_tag_count = len(members_with_tag)
+
+    # Obtém o número de membros com a tag2
+    members_with_tag2_count = len(members_with_tag2)
+
+    # Cria a tabela usando a formatação de string
+    # <@&{ID_TAG}>
+    table = f"""
+    Sem tag: {members_with_tag2_count:<5}\n
+Com tag: {members_with_tag_count:<5}
+    """
+    await ctx.send(f"{table}")
+
+bot.run('MTA4NTkwMDYyODI0MjQ3NzA1Ng.G5z59Y.ZORu6IM125lO_XmYqqxXlPj6N974EVG9TCyOEs')
