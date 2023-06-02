@@ -60,3 +60,36 @@ async def hora(ctx):
     hora_atual = agora.strftime("%H:%M:%S")
     await ctx.send(f"A hora atual é: {hora_atual}")
 
+
+@bot.command()
+async def av(ctx, member: discord.Member = None):
+    if member is None:
+        member = ctx.author
+
+    if member.avatar:
+        embed = discord.Embed(
+            title="Avatar",
+            description=f"Avatar de {member.mention}",
+            color=discord.Color.blue()
+        )
+        embed.set_image(url=member.avatar.url)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send('O usuário não possui um avatar definido.')
+
+
+@bot.command()
+async def listar(ctx, cargo: discord.Role):
+    membros = [str(membro.id)
+               for membro in ctx.guild.members if cargo in membro.roles]
+    membros_list = "\n".join(membros)
+    await ctx.send(f'ID dos membros com o cargo {cargo.mention}:\n\n{membros_list}')
+
+
+@bot.command()
+async def mencionar(ctx, cargo: discord.Role):
+    membros = [
+        membro.mention for membro in ctx.guild.members if cargo in membro.roles]
+    membros_list = "\n".join(membros)
+    await ctx.send(f'Membros com o cargo {cargo.mention}:\n\n{membros_list}')
+
