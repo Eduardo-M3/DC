@@ -1,10 +1,11 @@
 import discord
+import asyncio
 from discord.ext import commands
 from datetime import datetime
 
 intents = discord.Intents.all()
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='-', intents=intents)
 
 
 @bot.event
@@ -93,3 +94,24 @@ async def mencionar(ctx, cargo: discord.Role):
     membros_list = "\n".join(membros)
     await ctx.send(f'Membros com o cargo {cargo.mention}:\n\n{membros_list}')
 
+
+@bot.command()
+async def verificar_membros(ctx, cargo: discord.Role, *, membros_lista: str):
+    # Obtém a lista de membros mencionada pelo usuário
+    membros_mencionados = membros_lista.split()
+
+    # Obtém todos os membros do servidor que possuem o cargo
+    membros_com_cargo = cargo.members
+
+    # Filtra os membros que possuem o cargo, mas não estão na lista mencionada
+    membros_nao_mencionados = [
+        membro for membro in membros_com_cargo if str(membro.id) not in membros_mencionados
+    ]
+
+    # Menciona os membros que possuem o cargo, mas não estão na lista mencionada
+    if membros_nao_mencionados:
+        mencoes = ' '.join(
+            [membro.mention for membro in membros_nao_mencionados])
+        await ctx.send(f'Membros com o cargo {cargo.name}, mas não mencionados: {mencoes}')
+    else:
+        await ctx.send('Todos os membros com o cargo estão mencionados.')
