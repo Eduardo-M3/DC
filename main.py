@@ -39,7 +39,7 @@ async def on_message(message):
         )
         embed.set_thumbnail(url=bot.user.avatar.url)
         embed.set_image(
-            url="https://cdn.discordapp.com/attachments/1040612684317601896/1114192302982823946/Banner.png")
+            url="https://cdn.discordapp.com/attachments/1040612684317601896/1115355022981599363/Mov_1920_720_px.png")
         embed.add_field(
             name="hora",
             value="Comando usado para exibir a hora atual.",
@@ -205,4 +205,46 @@ async def levantamento(ctx):
 **Com tag:** {members_with_tag_count:<5}
 """
     await ctx.send(f"{table}")
+
+
+@bot.command()
+async def meus_servidores(ctx):
+    servidores = bot.guilds
+    for servidor in servidores:
+        nome_servidor = servidor.name
+        await ctx.send(f"Bot está presente no servidor: {nome_servidor}")
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def enviar_mensagem_privada(ctx, cargo: discord.Role, *, mensagem: str):
+    # Filtra os membros que possuem o cargo
+    membros_com_cargo = [
+        membro for membro in ctx.guild.members if cargo in membro.roles]
+
+    # Cria um canal de texto para coletar as respostas dos usuários
+    canal_respostas = await ctx.guild.create_text_channel(name="respostas-bot")
+
+    for membro in membros_com_cargo:
+        try:
+            # Envia a mensagem privada para cada membro com o cargo
+            await membro.send(mensagem)
+
+            # Aguarda a resposta do usuário no canal de respostas
+            def check(m):
+                return m.author == membro and m.channel == canal_respostas
+
+            resposta = await bot.wait_for("message", check=check)
+
+            # Envia a resposta para o canal de respostas
+            await canal_respostas.send(f"Resposta de {membro.name}#{membro.discriminator}: {resposta.content}")
+
+            print(
+                f"Mensagem enviada para {membro.name}#{membro.discriminator}")
+        except discord.Forbidden:
+            print(
+                f"Não foi possível enviar a mensagem para {membro.name}#{membro.discriminator} (privacidade desativada)")
+
+    # Finaliza o comando removendo o canal de respostas
+    await canal_respostas.delete()
 
