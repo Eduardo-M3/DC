@@ -1,5 +1,4 @@
 import discord
-import asyncio
 from discord.ext import commands
 from datetime import datetime
 
@@ -177,7 +176,8 @@ async def verificar(ctx, cargo: discord.Role, *, membros_lista: str):
 # Informe a tag desejada aqui
 ID_TAG = "1093694361801338921"
 ID_TAG2 = "1093694341505105984"
-
+data_atual = datetime.now()
+data_formatada = data_atual.strftime("%d/%m")
 @bot.command()
 async def levantamento(ctx):
     # Obtém o número total de membros no servidor
@@ -199,8 +199,10 @@ async def levantamento(ctx):
 
     # Cria a tabela usando a formatação de string
     # <@&{ID_TAG}>
-    table = f"""
-    Sem tag: {members_with_tag2_count:<5}\n
-Com tag: {members_with_tag_count:<5}
-    """
+    table = f"""**__LEVANTAMENTO {data_formatada}__**
+
+**Sem tag:** {members_with_tag2_count:<5}\n
+**Com tag:** {members_with_tag_count:<5}
+"""
     await ctx.send(f"{table}")
+
