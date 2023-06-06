@@ -217,34 +217,17 @@ async def meus_servidores(ctx):
 
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def enviar_mensagem_privada(ctx, cargo: discord.Role, *, mensagem: str):
+async def msg(ctx, cargo: discord.Role, *, mensagem: str):
     # Filtra os membros que possuem o cargo
     membros_com_cargo = [
         membro for membro in ctx.guild.members if cargo in membro.roles]
 
-    # Cria um canal de texto para coletar as respostas dos usuários
-    canal_respostas = await ctx.guild.create_text_channel(name="respostas-bot")
-
+    # Envia a mensagem privada para cada membro com o cargo
     for membro in membros_com_cargo:
         try:
-            # Envia a mensagem privada para cada membro com o cargo
             await membro.send(mensagem)
-
-            # Aguarda a resposta do usuário no canal de respostas
-            def check(m):
-                return m.author == membro and m.channel == canal_respostas
-
-            resposta = await bot.wait_for("message", check=check)
-
-            # Envia a resposta para o canal de respostas
-            await canal_respostas.send(f"Resposta de {membro.name}#{membro.discriminator}: {resposta.content}")
-
             print(
                 f"Mensagem enviada para {membro.name}#{membro.discriminator}")
         except discord.Forbidden:
             print(
                 f"Não foi possível enviar a mensagem para {membro.name}#{membro.discriminator} (privacidade desativada)")
-
-    # Finaliza o comando removendo o canal de respostas
-    await canal_respostas.delete()
-
