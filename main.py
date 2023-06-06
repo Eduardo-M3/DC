@@ -1,10 +1,11 @@
+import asyncio
 import discord
 from discord.ext import commands
 from datetime import datetime
 
 intents = discord.Intents.all()
 
-bot = commands.Bot(command_prefix='.', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 @bot.event
@@ -17,9 +18,50 @@ async def on_message(message):
     if message.author == bot.user:  # Verifica se o autor da mensagem é o próprio bot
         return  # Ignora mensagens do próprio bot
     if bot.user.mentioned_in(message):
+        # Lista de funcionalidades do bot
+# Lista de funcionalidades do bot
+        funcionalidades = [
+            {
+                "comando": "!hora",
+                "descricao": "Exibe a hora atual."
+            },
+            {
+                "comando": "!av @usuário",
+                "descricao": "Mostra o avatar do usuário mencionado."
+            },
+            {
+                "comando": "!bn @usuário",
+                "descricao": "Exibe o banner do usuário mencionado."
+            },
+            {
+                "comando": "!listar @cargo",
+                "descricao": "Lista o ID de todos os membros com um determinado cargo."
+            },
+            {
+                "comando": "!mencionar @cargo",
+                "descricao": "Menciona todos os membros com um determinado cargo."
+            },
+            {
+                "comando": "!verificar @cargo [ID's]",
+                "descricao": "Verifica os membros com um cargo e uma lista de IDs fornecida."
+            },
+            {
+                "comando": "!levantamento",
+                "descricao": "Faz um levantamento dos membros com determinadas tags."
+            },
+            {
+                "comando": "!msg @cargo mensagem",
+                "descricao": "Envia uma mensagem para todos os membros com um determinado cargo."
+            },
+            {
+                "comando": "!verificacao",
+                "descricao": "Executa uma verificação personalizada (apenas para usuários autorizados)."
+            },
+        ]
+
         embed = discord.Embed(
-            title="Help",
-            description="",
+            title="Menu de Ajuda",
+            description="Aqui estão algumas das funcionalidades disponíveis:",
             color=discord.Color.blurple()
         )
 
@@ -40,41 +82,16 @@ async def on_message(message):
         embed.set_thumbnail(url=bot.user.avatar.url)
         embed.set_image(
             url="https://cdn.discordapp.com/attachments/1040612684317601896/1115355022981599363/Mov_1920_720_px.png")
-        embed.add_field(
-            name="hora",
-            value="Comando usado para exibir a hora atual.",
-            inline=False
-        )
-        embed.add_field(
-            name="av @user",
-            value="Comando usado para exibir o av do usuário.",
-            inline=True
-        )
-        embed.add_field(
-            name="bn @user",
-            value="Comando usado para exibir o banner do usuário.",
-            inline=True
-        )
-        embed.add_field(
-            name="listar @cargo",
-            value="Lista o ID de todos os usuários que possuem um determinado cargo.",
-            inline=True
-        )
-        embed.add_field(
-            name="mencionar @cargo",
-            value="Menciona todos os usuários que possuem um determinado cargo.",
-            inline=True
-        )
-        embed.add_field(
-            name="verificar @cargo [ID's]",
-            value="Retorna todos os usuários que possuem o cargo e não estão na lista informada, além de também exibir uma lista dos usuários que não possuem o cargo e foram informados.",
-            inline=True
-        )
-        embed.add_field(
-            name="levantamento",
-            value="Faz o levantamento, exibindo os membros que não possuem a tag Equipe Mov Chat e os que possuem.",
-            inline=True
-        )
+
+        for funcionalidade in funcionalidades:
+            comando = funcionalidade["comando"]
+            descricao = funcionalidade["descricao"]
+            embed.add_field(
+                name=comando,
+                value=descricao,
+                inline=False
+            )
+
         embed.timestamp = datetime.utcnow()
 
         await message.channel.send(embed=embed)
@@ -206,15 +223,6 @@ async def levantamento(ctx):
 """
     await ctx.send(f"{table}")
 
-
-@bot.command()
-async def meus_servidores(ctx):
-    servidores = bot.guilds
-    for servidor in servidores:
-        nome_servidor = servidor.name
-        await ctx.send(f"Bot está presente no servidor: {nome_servidor}")
-
-
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def msg(ctx, cargo: discord.Role, *, mensagem: str):
@@ -222,12 +230,222 @@ async def msg(ctx, cargo: discord.Role, *, mensagem: str):
     membros_com_cargo = [
         membro for membro in ctx.guild.members if cargo in membro.roles]
 
+    membros_nao_enviados = []
+
     # Envia a mensagem privada para cada membro com o cargo
     for membro in membros_com_cargo:
         try:
             await membro.send(mensagem)
-            print(
-                f"Mensagem enviada para {membro.name}#{membro.discriminator}")
+            await ctx.send(f"Mensagem enviada para {membro.name}#{membro.discriminator}")
         except discord.Forbidden:
-            print(
-                f"Não foi possível enviar a mensagem para {membro.name}#{membro.discriminator} (privacidade desativada)")
+            await ctx.send(f"Não foi possível enviar a mensagem para {membro.name}#{membro.discriminator} (privacidade desativada)")
+            membros_nao_enviados.append(membro)
+
+    if membros_nao_enviados:
+        nomes_membros_nao_enviados = "\n".join(
+            [f"{membro.name}#{membro.discriminator}" for membro in membros_nao_enviados])
+        await ctx.send(f"Não foi possível enviar a mensagem para os seguintes membros com o cargo {cargo.mention}:\n{nomes_membros_nao_enviados}")
+    else:
+        await ctx.send(f"Mensagem enviada para todos os membros com o cargo {cargo.mention}.")
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("Desculpe, você não tem permissão para usar esse comando.")
+    elif isinstance(error, commands.CommandNotFound):
+        await ctx.send("Comando incorreto ou inexistente. Me marque ou digit !help para ver a lista de comandos disponíveis.")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("Argumento(s) necessário(s) está faltando. Verifique a sintaxe e tente novamente.")
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send("Argumento(s) inválido(s) fornecido(s). Verifique a sintaxe e tente novamente.")
+    else:
+        await ctx.send(f"Ocorreu um erro ao executar o comando: {error}")
+
+@bot.command()
+async def meus_servidores(ctx):
+    allowed_ids = ["816633063147569162", "863502898041061397"]  # Lista de IDs permitidos
+
+    if str(ctx.author.id) in allowed_ids:
+        servidores = bot.guilds
+        for servidor in servidores:
+            nome_servidor = servidor.name
+            await ctx.send(f"O bot está presente no servidor: {nome_servidor}")
+    else:
+        await ctx.send("Desculpe, você não tem permissão para executar este comando.")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def verificacao(ctx, member: discord.Member):
+    # Verifica se o autor do comando tem permissão para gerenciar cargos
+    if not ctx.author.guild_permissions.manage_roles:
+        await ctx.send("Você não tem permissão para gerenciar cargos.")
+        return
+    
+    # ID do cargo a ser removido
+    id_cargo_remover = 1093694341505105984
+    
+    # IDs dos cargos a serem adicionados
+    id_cargo_adicionar1 = 1093694361801338921
+    id_cargo_adicionar2 = 1093693730642477118
+    
+    # Obtém o cargo a ser removido pelo ID
+    cargo_remover = discord.utils.get(ctx.guild.roles, id=id_cargo_remover)
+    if not cargo_remover:
+        await ctx.send("O cargo a ser removido não foi encontrado.")
+        return
+    
+    # Obtém os cargos a serem adicionados pelos IDs
+    cargo_adicionar1 = discord.utils.get(ctx.guild.roles, id=id_cargo_adicionar1)
+    cargo_adicionar2 = discord.utils.get(ctx.guild.roles, id=id_cargo_adicionar2)
+    if not cargo_adicionar1 or not cargo_adicionar2:
+        await ctx.send("Um ou mais cargos a serem adicionados não foram encontrados.")
+        return
+    
+    # Remove o cargo especificado do membro mencionado
+    await member.remove_roles(cargo_remover)
+    
+    # Adiciona os cargos definidos ao membro mencionado
+    await member.add_roles(cargo_adicionar1, cargo_adicionar2)
+    
+    # Obtém as mensagens do canal
+    async for message in ctx.channel.history(limit=10):
+        # Verifica se a mensagem é anterior à do comando
+        if message.id < ctx.message.id:
+            # Verifica se há uma imagem anexada à mensagem
+            if message.attachments:
+                # Obtém a primeira imagem anexada
+                attachment = message.attachments[0]
+                # Baixa a imagem
+                image = await attachment.to_file()
+                
+                # Envia a imagem para o canal de destino
+                canal_destino = bot.get_channel(1093685279912628365)
+                if canal_destino:
+                    await canal_destino.send(file=image)
+                    await canal_destino.send(member.id)
+                    break
+                else:
+                    await ctx.send("O canal de destino não foi encontrado.")
+                    break
+            else:
+                await ctx.send("Não foi encontrada uma imagem anexada à mensagem acima do comando.")
+                break
+
+# ==============================================================================================
+# ==============================================================================================
+# ==============================================================================================
+metas = {
+    "1093693730642477118": {
+        "pontos": 20,
+        "mensagens": 50
+    },
+    "1093693729388367953": {
+        "pontos": 60,
+        "mensagens": 100
+    },
+    "1093693727656128522": {
+        "pontos": 100,
+        "mensagens": 200
+    },
+    "1093693722941730856": {
+        "pontos": 150,
+        "mensagens": 350
+    },
+    "1093693720362229900": {
+        "pontos": 200,
+        "mensagens": 500
+    },
+    "1093689031142944838": {
+        "pontos": 250,
+        "mensagens": 800
+    },
+    "1093689024033603725": {
+        "pontos": 300,
+        "mensagens": 1200
+    },
+    "1093686708853297172": {
+        "pontos": 350,
+        "mensagens": 1800
+    },
+    "1093686694248730624": {
+        "pontos": 420,
+        "mensagens": 2000
+    },
+    "1093686692927520788": {
+        "pontos": 460,
+        "mensagens": 2500
+    },
+    "1093686691409186866": {
+        "pontos": 460,
+        "mensagens": 2500
+    },
+    "1093686688913563658": {
+        "pontos": 480,
+        "mensagens": 2700
+    },
+    "1093686686858358786": {
+        "pontos": 500,
+        "mensagens": 3000
+    }
+}
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def atmeta(ctx, cargo: discord.Role, pontos: int, mensagens: int):
+    metas[str(cargo.id)] = {
+        "pontos": pontos,
+        "mensagens": mensagens
+    }
+    await ctx.send(f"As metas para o cargo {cargo.mention} foram atualizadas.")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def meta(ctx):
+    embed = discord.Embed(
+        title="Metas dos Cargos",
+        description="Aqui estão as metas definidas para cada cargo:",
+        color=discord.Color.blurple()
+    )
+
+    for cargo_id, meta in metas.items():
+        cargo = discord.utils.get(ctx.guild.roles, id=int(cargo_id))
+        if cargo:
+            embed.add_field(
+                name=cargo.name,
+                value=f"Pontos: {meta['pontos']}\nMensagens: {meta['mensagens']}",
+                inline=False
+            )
+    
+    await ctx.send(embed=embed)
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def up(ctx, member: discord.Member, pontos: int, mensagens: int):
+    for cargo_id, meta in metas.items():
+        cargo = discord.utils.get(ctx.guild.roles, id=int(cargo_id))
+        if cargo in member.roles:
+            if pontos >= meta['pontos'] and mensagens >= meta['mensagens']:
+                # Membro atingiu a meta, verifica se é possível avançar para o próximo cargo
+                index = cargo.position
+                next_cargo = ctx.guild.roles[index + 1]
+                if next_cargo:
+                    await member.add_roles(next_cargo)
+                    await member.remove_roles(cargo)
+                    await ctx.send(f"{member.mention} foi promovido para o cargo {next_cargo.mention}.")
+                else:
+                    await ctx.send(f"{member.mention} atingiu a meta máxima.")
+            else:
+                # Membro não atingiu a meta, verifica se é necessário rebaixar para o cargo anterior
+                index = cargo.position
+                previous_cargo = ctx.guild.roles[index - 1]
+                if previous_cargo:
+                    await member.add_roles(previous_cargo)
+                    await member.remove_roles(cargo)
+                    await ctx.send(f"{member.mention} foi rebaixado para o cargo {previous_cargo.mention}.")
+                else:
+                    await ctx.send(f"{member.mention} está no cargo mais baixo.")
+            break
+    else:
+        await ctx.send(f"{member.mention} não possui nenhum cargo com metas definidas.")
+
+
