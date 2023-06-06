@@ -1,17 +1,27 @@
-import asyncio
+import random
 import discord
-from discord.ext import commands
+import asyncio
+import datetime
 from datetime import datetime
+from discord.ext import commands
+
 
 intents = discord.Intents.all()
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+# Definindo os prefixos
+prefixes = ['!', '$']
+bot = commands.Bot(command_prefix=prefixes, intents=intents)
 
+# Função personalizada para verificar o prefixo usado
+def get_prefix(bot, message):
+    for prefix in prefixes:
+        if message.content.startswith(prefix):
+            return prefix
+    return None
 
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} está online!')
-
 
 @bot.event
 async def on_message(message):
@@ -392,60 +402,118 @@ metas = {
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def atmeta(ctx, cargo: discord.Role, pontos: int, mensagens: int):
-    metas[str(cargo.id)] = {
-        "pontos": pontos,
-        "mensagens": mensagens
-    }
-    await ctx.send(f"As metas para o cargo {cargo.mention} foram atualizadas.")
+    prefix = get_prefix(bot, ctx.message)
+    if prefix == '$':
+        metas[str(cargo.id)] = {
+            "pontos": pontos,
+            "mensagens": mensagens
+        }
+        await ctx.send(f"As metas para o cargo {cargo.mention} foram atualizadas.")
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def meta(ctx):
-    embed = discord.Embed(
-        title="Metas dos Cargos",
-        description="Aqui estão as metas definidas para cada cargo:",
-        color=discord.Color.blurple()
-    )
+    prefix = get_prefix(bot, ctx.message)
+    if prefix == '$':
+        embed = discord.Embed(
+            title="Metas dos Cargos",
+            description="Aqui estão as metas definidas para cada cargo:",
+            color=discord.Color.blurple()
+        )
 
-    for cargo_id, meta in metas.items():
-        cargo = discord.utils.get(ctx.guild.roles, id=int(cargo_id))
-        if cargo:
-            embed.add_field(
-                name=cargo.name,
-                value=f"Pontos: {meta['pontos']}\nMensagens: {meta['mensagens']}",
-                inline=False
-            )
-    
-    await ctx.send(embed=embed)
+        for cargo_id, meta in metas.items():
+            cargo = discord.utils.get(ctx.guild.roles, id=int(cargo_id))
+            if cargo:
+                embed.add_field(
+                    name=cargo.name,
+                    value=f"Pontos: {meta['pontos']}\nMensagens: {meta['mensagens']}",
+                    inline=False
+                )
+        
+        await ctx.send(embed=embed)
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def up(ctx, member: discord.Member, pontos: int, mensagens: int):
-    for cargo_id, meta in metas.items():
-        cargo = discord.utils.get(ctx.guild.roles, id=int(cargo_id))
-        if cargo in member.roles:
-            if pontos >= meta['pontos'] and mensagens >= meta['mensagens']:
-                # Membro atingiu a meta, verifica se é possível avançar para o próximo cargo
-                index = cargo.position
-                next_cargo = ctx.guild.roles[index + 1]
-                if next_cargo:
-                    await member.add_roles(next_cargo)
-                    await member.remove_roles(cargo)
-                    await ctx.send(f"{member.mention} foi promovido para o cargo {next_cargo.mention}.")
+    prefix = get_prefix(bot, ctx.message)
+    if prefix == '$':
+        for cargo_id, meta in metas.items():
+            cargo = discord.utils.get(ctx.guild.roles, id=int(cargo_id))
+            if cargo in member.roles:
+                if pontos >= meta['pontos'] and mensagens >= meta['mensagens']:
+                    # Membro atingiu a meta, verifica se é possível avançar para o próximo cargo
+                    index = cargo.position
+                    next_cargo = ctx.guild.roles[index + 1]
+                    if next_cargo:
+                        await member.add_roles(next_cargo)
+                        await member.remove_roles(cargo)
+                        await ctx.send(f"{member.mention} foi promovido para o cargo {next_cargo.mention}.")
+                    else:
+                        await ctx.send(f"{member.mention} atingiu a meta máxima.")
                 else:
-                    await ctx.send(f"{member.mention} atingiu a meta máxima.")
-            else:
-                # Membro não atingiu a meta, verifica se é necessário rebaixar para o cargo anterior
-                index = cargo.position
-                previous_cargo = ctx.guild.roles[index - 1]
-                if previous_cargo:
-                    await member.add_roles(previous_cargo)
-                    await member.remove_roles(cargo)
-                    await ctx.send(f"{member.mention} foi rebaixado para o cargo {previous_cargo.mention}.")
-                else:
-                    await ctx.send(f"{member.mention} está no cargo mais baixo.")
-            break
-    else:
-        await ctx.send(f"{member.mention} não possui nenhum cargo com metas definidas.")
+                    # Membro não atingiu a meta, verifica se é necessário rebaixar para o cargo anterior
+                    index = cargo.position
+                    previous_cargo = ctx.guild.roles[index - 1]
+                    if previous_cargo:
+                        await member.add_roles(previous_cargo)
+                        await member.remove_roles(cargo)
+                        await ctx.send(f"{member.mention} foi rebaixado para o cargo {previous_cargo.mention}.")
+                    else:
+                        await ctx.send(f"{member.mention} está no cargo mais baixo.")
+                break
+        else:
+            await ctx.send(f"{member.mention} não possui nenhum cargo com metas definidas.")
 
+# ==============================================================================================
+# ==============================================================================================
+# ==============================================================================================
+
+citações = [
+    "*Com grandes poderes vêm grandes responsabilidades*. - **Tio Ben, Homem-Aranha**",
+    "*A persistência é o caminho do êxito.* - **Charlie Chaplin**",
+    "*Só se pode alcançar um grande êxito quando nos mantemos fiéis a nós mesmos.* - **Dumbledore, Harry Potter**",
+    "*O futuro pertence àqueles que acreditam na beleza de seus sonhos.* - **Eleanor Roosevelt**",
+    "*Não há caminho para a felicidade. A felicidade é o caminho.* - **Buda**",
+    "*O sucesso é a soma de pequenos esforços repetidos dia após dia.* - **Robert Collier**",
+    "A verdadeira sabedoria está em reconhecer a própria ignorância. - Sócrates",
+    "A felicidade não depende do que você tem ou de quem você é. Ela só depende do que você pensa. - Dale Carnegie",
+    "*A verdadeira força vem de dentro.* - **Garen, League of Legends**",
+    "*Nossos medos nos deixam mais humanos.* - **Vayne, League of Legends**",
+    "*A coragem é a resistência e o domínio do medo, não a ausência dele.* - **Mark Twain**",
+    "*O que não provoca minha morte faz com que eu fique mais forte.* - **Friedrich Nietzsche**",
+    "*Não é a força, mas a constância dos bons sentimentos que conduz os homens à felicidade.* - **Friedrich Nietzsche**",
+    "*A maior glória em viver não está em nunca cair, mas em nos levantarmos cada vez que caímos.* - **Ralph Waldo Emerson**",
+    "*A educação é a arma mais poderosa que você pode usar para mudar o mundo.* - **Nelson Mandela**",
+    "*O tempo é muito lento para os que esperam, muito rápido para os que têm medo, muito longo para os que lamentam, muito curto para os que festejam. Mas, para os que amam, o tempo é eternidade.* - **William Shakespeare**",
+    "*O sucesso é ir de fracasso em fracasso sem perder entusiasmo.* - **Winston Churchill**",
+]
+
+@bot.command()
+async def citação(ctx, variavel1: str, variavel2: str):
+    # Lista de IDs permitidos
+    allowed_ids = ["816633063147569162", "863502898041061397"]
+    if str(ctx.author.id) in allowed_ids:
+        citação_aleatória = random.choice(citações)
+        texto = f"*Bom dia webfofos!*\nDormiram bem? Já tomaram café?\n\n{citação_aleatória}\n\n**Não esqueçam de clicar no “tenho interesse”.**\n{variavel1}\n@here\n\n> Mandem nas suas g10 queridos Assessores, vamos manter nossos staffs ativos, sejam espertos evitem advertências vocês tem até as {variavel2}h para mandar o print, lembrando que se não postar o print e não deixar ausência levará advertência da mesma forma."
+        await ctx.send(texto)
+
+
+@bot.command()
+async def tarde(ctx, variavel1: str, variavel2: str):
+    # Lista de IDs permitidos
+    allowed_ids = ["816633063147569162", "863502898041061397"]
+    if str(ctx.author.id) in allowed_ids:
+        citação_aleatória = random.choice(citações)
+        texto = f"*Boa tarde amigos, como estamos?*\nComo estamos? Todos bem?\n\n{citação_aleatória}\n\n**Não esqueçam de clicar no “tenho interesse”.**\n{variavel1}\n@here\n\n> Mandem nas suas g10 queridos Assessores, vamos manter nossos staffs ativos, sejam espertos evitem advertências vocês tem até as {variavel2}h para mandar o print, lembrando que se não postar o print e não deixar ausência levará advertência da mesma forma."
+        await ctx.send(texto)
+
+
+@bot.command()
+async def noite(ctx, variavel1: str, variavel2: str):
+    # Lista de IDs permitidos
+    allowed_ids = ["816633063147569162", "863502898041061397"]
+    if str(ctx.author.id) in allowed_ids:
+        citação_aleatória = random.choice(citações)
+        texto = f"*Alô, boa noite, todos bem?\n\n{citação_aleatória}\n\n**Não esqueçam de clicar no “tenho interesse”.**\n{variavel1}\n@here\n\n> Mandem nas suas g10 queridos Assessores, vamos manter nossos staffs ativos, sejam espertos evitem advertências vocês tem até as {variavel2}h para mandar o print, lembrando que se não postar o print e não deixar ausência levará advertência da mesma forma."
+        await ctx.send(texto)
 
